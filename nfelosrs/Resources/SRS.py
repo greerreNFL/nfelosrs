@@ -2,10 +2,9 @@ import pandas as pd
 import numpy
 import pathlib
 
+from ..Utilities import calc_rsq_by_week
 from .PIT import PointInTime
-
 from .Bayes import update_distributions
-
 from .DataLoader import DataLoader
 
 def update_bayesian_distributions():
@@ -84,6 +83,7 @@ class SRS:
         ])
         ## calc an average margin ##
         avg_mov = flat.groupby(['team']).agg(
+            gp = ('mov', 'count'),
             avg_mov = ('mov', 'mean')
         ).reset_index()
         ## calc opp margins, filtered for other teams only ##
@@ -184,6 +184,7 @@ class SRS:
                 'season' : self.season,
                 'week' : self.week,
                 'team' : team,
+                'gp' : self.avg_margins[team]['gp'] if team in self.avg_margins else numpy.nan,
                 'avg_mov' : round(self.avg_margins[team]['avg_mov'] if team in self.avg_margins else numpy.nan, 2),
                 'avg_mov_of_opponents' : round(self.avg_margins[team]['avg_mov_of_opponents'] if team in self.avg_margins else numpy.nan, 2),
                 ## ratings ##
@@ -294,6 +295,9 @@ class SRSRunner:
             new_df.to_csv(
                 '{0}/srs_ratings.csv'.format(self.package_dir)
             )
-
-
-                               
+            ## calc rsq ##
+            rsq = calc_rsq_by_week(new_df)
+            ## save
+            rsq.to_csv(
+                '{0}/srs_rating_rsqs.csv'.format(self.package_dir)
+            )
