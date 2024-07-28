@@ -2,7 +2,7 @@ import pandas as pd
 import numpy
 import pathlib
 
-from ..Utilities import calc_rsq_by_week
+from ..Utilities import calc_rsq_by_week, calc_rmse_by_week
 from .PIT import PointInTime
 from .Bayes import update_distributions
 from .DataLoader import DataLoader
@@ -300,4 +300,9 @@ class SRSRunner:
             ## save
             rsq.to_csv(
                 '{0}/srs_rating_rsqs.csv'.format(self.package_dir)
+            )
+            ## calc rsme ##
+            rmse = calc_rmse_by_week(self.games, new_df)
+            rmse.to_csv(
+                '{0}/srs_rating_rmse.csv'.format(self.package_dir)
             )
