@@ -1,6 +1,6 @@
 from .Resources import *
 
-def run(rebuild=False):
+def run(rebuild=False, with_date_return=False):
     ## wrapper to run and update all models ##
     ## load data ##
     data = DataLoader()
@@ -19,6 +19,11 @@ def run(rebuild=False):
         rebuild
     )
     srs_runner.run()
+    if with_date_return:
+        ## if flagged, will return the season and week
+        ## the ratings are through. This is done to give the 
+        ## downstream repo updating script contextual info for commit msg
+        return data.current_season, data.current_week
 
 def create_bayesian_distributions():
     '''
