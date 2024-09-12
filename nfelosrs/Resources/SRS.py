@@ -231,7 +231,9 @@ class SRSRunner:
         ).reset_index(drop=True).groupby(['season', 'week']).head(1)[[
             'season', 'week'
         ]].values.tolist()
+        print(self.week_list)
         self.existing_ratings, self.current_week_index = self.load_existing()
+        print(self.current_week_index)
 
     def load_existing(self):
         '''
@@ -246,7 +248,7 @@ class SRSRunner:
             mr_season = existing['season'].max()
             mr_week = existing[existing['season']==mr_season]['week'].max()
             ## get index in week list ##
-            mr_index = self.week_list.index([mr_season, mr_week]) + 1
+            mr_index = self.week_list.index([mr_season, mr_week])
             ## return ##
             return existing, mr_index
         except:
