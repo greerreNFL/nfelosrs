@@ -231,9 +231,7 @@ class SRSRunner:
         ).reset_index(drop=True).groupby(['season', 'week']).head(1)[[
             'season', 'week'
         ]].values.tolist()
-        print(self.week_list)
         self.existing_ratings, self.current_week_index = self.load_existing()
-        print(self.current_week_index)
 
     def load_existing(self):
         '''
@@ -270,7 +268,7 @@ class SRSRunner:
             ## storage for each run ##
             new_dfs = []
             ## run for each ##
-            for season_week_array in self.week_list[self.current_week_index:]:
+            for season_week_array in self.week_list[self.current_week_index+1:]:
                 print('     On week {0}, {1}'.format(
                     season_week_array[1],
                     season_week_array[0]
