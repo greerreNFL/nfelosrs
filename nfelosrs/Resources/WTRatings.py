@@ -7,7 +7,7 @@ from .. import Utilities as utils
 
 class WTRatings():
     ## model class for the wt model ##
-    def __init__(self, wts, games, wt_ratings, rebuild=False):
+    def __init__(self, wts, games, wt_ratings, rebuild=False, config_override=None):
         ## package path ##
         self.package_dir = pathlib.Path(__file__).parent.parent.parent.resolve()
         ## state ##
@@ -16,6 +16,8 @@ class WTRatings():
         ## config ##
         self.rebuild = rebuild
         self.config = utils.load_config('config.json', ['wt_ratings'])
+        if config_override:
+            self.config.update(config_override)
         ## dfs ##
         self.wts = wts
         self.games = games
@@ -61,24 +63,44 @@ class WTRatings():
         temp['hfa'] = x[0]
         temp['home_rating'] = temp['home_team'].map(val_dict)
         temp['away_rating'] = temp['away_team'].map(val_dict)
+        ## get rating delta ##
+        rating_delta = (
+            temp['home_rating'] +
+            temp['hfa'] -
+            temp['away_rating']
+        )
         ## calc margin ##
         if is_elo:
-            temp['expected_elo_dif'] = (
-                temp['home_rating'] +
-                temp['hfa'] -
-                temp['away_rating']
-            )
+            temp['expected_elo_dif'] = rating_delta
             ## calc win probs from margin ##
             temp['home_win'] = 1.0 / (numpy.power(10.0, (-1 * temp['expected_elo_dif']/400)) + 1.0)
+            temp['away_win'] = 1 - temp['home_win']
         else:
-            temp['expected_margin'] = (
-                temp['home_rating'] +
-                temp['hfa'] -
-                temp['away_rating']
-            )
+            temp['expected_margin'] = rating_delta
             ## calc win probs from margin ##
-            temp['home_win'] = utils.spread_to_prob(temp['expected_margin'])
-        temp['away_win'] = 1 - temp['home_win']
+            elo_divisor = self.config.get('elo_divisor', 400)
+            temp['home_win'] = utils.spread_to_prob(temp['expected_margin'], divisor=elo_divisor)
+            temp['away_win'] = 1 - temp['home_win']
+        ## calc binary outcome ##
+        home_win_binary = numpy.where(
+            temp['home_win'] > 0.5,
+            numpy.where(
+                temp['home_win'] == 0.5,
+                0.5,
+                1
+            ),
+            0
+        )
+        away_win_binary = 1 - home_win_binary
+        ## blend into margin ##
+        temp['home_win'] = (
+            home_win_binary * self.config['binary_weight'] +
+            temp['home_win'] * (1 - self.config['binary_weight'])
+        )
+        temp['away_win'] = (
+            away_win_binary * self.config['binary_weight'] +
+            temp['away_win'] * (1 - self.config['binary_weight'])
+        )
         ## retrun ##
         return temp
         
@@ -274,6 +296,13 @@ class WTRatings():
                 on=['season','team'],
                 how='left'
             )
+            ## round ratings ##
+            for col in [
+                'wt_rating', 'wt_rating_elo', 'sos',
+                'hold', 'over_probability', 'under_probability',
+                'line_adj'
+            ]:
+                new_df[col] = new_df[col].round(4)
             ## add to existing ##
             if self.wt_ratings is None or self.rebuild:
                 self.wt_ratings = new_df
