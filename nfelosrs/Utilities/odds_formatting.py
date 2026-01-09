@@ -17,7 +17,7 @@ def calc_vf_over_prob(over_prob, under_prob):
         (over_prob + under_prob)
     )
 
-def spread_to_prob(spread):
+def spread_to_prob(spread, divisor=400):
     ## hacky method for converting spreads to win probabilities ##
     ## using the elo formula ##
     ## convert to elo dif ##
@@ -26,7 +26,7 @@ def spread_to_prob(spread):
     prob = (
         1 /
         (
-            10 ** (-dif / 400) +
+            10 ** (-dif / divisor) +
             1
         )
     )
