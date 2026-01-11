@@ -1,0 +1,2 @@
+from .test_wt_completeness import test_wt_ratings_completeness
+from .test_wt_rsq_progression import test_rsq_progression

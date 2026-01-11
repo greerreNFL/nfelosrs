@@ -29,4 +29,4 @@ def create_bayesian_distributions():
     '''
     wrapper for the bayesian distribution workflow
     '''
-    update_bayesian_distributions()
+    update_distributions()

@@ -1,7 +1,10 @@
+## rsq calculation utilities ##
+
 import pandas as pd
 import numpy
 
-import statsmodels.api as sm
+from .base import grouped_rsq
+
 
 def calc_future_margin(srs_ratings):
     '''
@@ -23,27 +26,6 @@ def calc_future_margin(srs_ratings):
     )
     return srs_ratings
 
-def grouped_rsq(grouped_df):
-    '''
-    Calculates rsq for each measure from a groped df. Call with apply
-    '''
-    ## struc for results ##
-    output = {}
-    for rating in [
-        'avg_mov', 'srs_rating', 'srs_rating_normalized', 'bayesian_rating',
-        'pre_season_wt_rating', 'srs_rating_w_qb_adj', 'srs_rating_normalized_w_qb_adj',
-        'bayesian_rating_w_qb_adj', 'pre_season_wt_rating_w_qb_adj'
-    ]:
-        ## calc the residual and total ##
-        model = sm.OLS(
-            grouped_df['future_mov'],
-            grouped_df[[rating, 'const']],
-            hasconst=True
-        ).fit()
-        ## translate to rsq and add
-        output['{0}_rsq'.format(rating)] = model.rsquared
-    ## return the calcs ##
-    return pd.Series(output)
 
 def calc_rsq(srs_rating_df):
     '''

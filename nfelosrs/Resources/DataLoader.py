@@ -1,14 +1,17 @@
 import pandas as pd
 import numpy
-import pathlib
 
 import nfelodcm as dcm
+
+from .. import Utilities as utils
+from ..Utilities import get_package_dir, TEAM_REPLACEMENTS
+
 
 class DataLoader():
     ## this class loads, formats, and merges, necessary data ##
     def __init__(self):
         ## package path ##
-        self.package_dir = pathlib.Path(__file__).parent.parent.parent.resolve()
+        self.package_dir = get_package_dir()
         ## states ##
         self.current_season, self.current_week = dcm.get_season_state()
         ## data frames ##
@@ -19,14 +22,6 @@ class DataLoader():
         self.wt_ratings = None ## win total ratings ##
         self.seasonal_srs = None ## season 
         self.weekly_srs = None ## where the weekly srs will be outputed ##
-        ## repl dicts ##
-        self.team_repl = {
-            'LA': 'LAR',
-            'LV': 'OAK',
-            'STL': 'LAR',
-            'SD': 'LAC',
-            'WSH' : 'WAS'
-        }
         ## init ##
         self.load_dfs()
         self.compute_simple_hfa()
@@ -38,20 +33,20 @@ class DataLoader():
             '{0}/nfelosrs/Manual Data/win_totals.csv'.format(self.package_dir),
             index_col=0
         )
-        self.wts['team'] = self.wts['team'].replace(self.team_repl)
+        self.wts['team'] = self.wts['team'].replace(TEAM_REPLACEMENTS)
         ## games ##
         self.games = self.db['games'].copy()
         self.qbs = self.db['qbelo'].copy()
         ## repl qb names ##
-        self.qbs['team1'] = self.qbs['team1'].replace(self.team_repl)
-        self.qbs['team2'] = self.qbs['team2'].replace(self.team_repl)
+        self.qbs['team1'] = self.qbs['team1'].replace(TEAM_REPLACEMENTS)
+        self.qbs['team2'] = self.qbs['team2'].replace(TEAM_REPLACEMENTS)
         ## existing wts ##
         try:
             self.wt_ratings = pd.read_csv(
                 '{0}/wt_ratings.csv'.format(self.package_dir),
                 index_col=0
             )
-        except:
+        except FileNotFoundError:
             pass
         ## seasonal srs ##
         try:
@@ -59,7 +54,7 @@ class DataLoader():
                 '{0}/seasonal_srs.csv'.format(self.package_dir),
                 index_col=0
             )
-        except:
+        except FileNotFoundError:
             pass
         ## weekly srs ##
         try:
@@ -67,7 +62,7 @@ class DataLoader():
                 '{0}/weekly_srs.csv'.format(self.package_dir),
                 index_col=0
             )
-        except:
+        except FileNotFoundError:
             pass
     
     def compute_simple_hfa(self):
@@ -109,3 +104,13 @@ class DataLoader():
             on=['season'],
             how='left'
         )
+    
+    def check_wt_training_needed(self):
+        ## check if new seasons need coefficient training ##
+        latest_wt_season = self.wts['season'].max()
+        config = utils.load_config('config.json', ['wt_ratings'])
+        trained = config.get('wt_rating_adjustments', {}).keys()
+        latest_trained = max(int(s) for s in trained) if trained else 2008
+        if latest_wt_season > latest_trained:
+            return True, latest_wt_season
+        return False, None
